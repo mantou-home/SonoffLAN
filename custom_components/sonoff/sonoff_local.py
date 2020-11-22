@@ -9,7 +9,7 @@ from typing import Callable, List
 from Crypto.Cipher import AES
 from Crypto.Hash import MD5
 from Crypto.Random import get_random_bytes
-from aiohttp import ClientSession, ClientOSError
+from aiohttp import ClientSession, ClientOSError, ServerDisconnectedError
 
 from zeroconf import ServiceBrowser, Zeroconf, ServiceStateChange
 
@@ -175,7 +175,7 @@ class EWeLinkLocal:
 
             data = decrypt(properties, devicekey)
             # Fix Sonoff RF Bridge sintax bug
-            if data.startswith(b'{"rf'):
+            if data and data.startswith(b'{"rf'):
                 data = data.replace(b'"="', b'":"')
         else:
             data = ''.join([properties[f'data{i}'] for i in range(1, 4, 1)
@@ -293,7 +293,7 @@ class EWeLinkLocal:
         except asyncio.TimeoutError:
             _LOGGER.debug(f"{log} !! Timeout {timeout}")
             return 'timeout'
-        except ClientOSError as e:
+        except (ClientOSError, ServerDisconnectedError) as e:
             _LOGGER.debug(f"{log} !! {e.args}")
             return 'E#COS'
         except:
